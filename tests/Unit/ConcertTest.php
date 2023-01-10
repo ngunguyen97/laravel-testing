@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Concert;
+use App\Exceptions\NotEnoughTicketsRemainException;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -58,10 +59,39 @@ class ConcertTest extends TestCase
     public function can_order_concert_tickets()
     {
         $concert = factory(Concert::class)->create();
+        $concert->addTickets(3);
         $order = $concert->orderTickets('jane@example.com', 3);
 
         $this->assertEquals('jane@example.com', $order->email);
         $this->assertEquals(3, $order->tickets()->count());
+    }
 
+    /** @test */
+    public function can_add_tickets()
+    {
+        $concert = factory(Concert::class)->create();
+
+        $concert->addTickets(10);
+
+        $this->assertEquals(10, $concert->ticketsRemaining());
+    }
+
+    /** @test */
+    public function tickets_remaining_does_not_includes_tickets_that_were_already_allocated()
+    {
+        $concert = factory(Concert::class)->create();
+        $concert->addTickets(10);
+        $concert->orderTickets('joey.tribbiani@daysofourlives.tv', 4);
+
+        $this->assertEquals(6, $concert->ticketsRemaining());
+    }
+
+    /** @test */
+    public function trying_to_purchase_more_tickets_than_remain_throws_an_exception()
+    {
+        $concert = factory(Concert::class)->create();
+        $concert->addTickets(10);
+        $this->expectException(NotEnoughTicketsRemainException::class);
+        $concert->orderTickets('holly@thedog.com', 24);
     }
 }
