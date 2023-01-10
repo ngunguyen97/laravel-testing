@@ -10,21 +10,25 @@ class FakePaymentGateway implements PaymentGateway
 
     public function __construct()
     {
-      $this->charges = collect();
+        $this->charges = collect();
     }
 
     public function getValidTestToken()
     {
-      return 'valid-token';
+        return 'valid-token';
     }
 
     public function charge($amount, $token)
     {
-      $this->charges[] = $amount;
+        if ($token != $this->getValidTestToken()) {
+            throw new PaymentFailedException;
+        }
+
+        $this->charges[] = $amount;
     }
 
     public function totalCharges()
     {
-      return $this->charges->sum();
+        return $this->charges->sum();
     }
 }
